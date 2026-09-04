@@ -1,0 +1,23 @@
+# Build output (includes FetchContent-downloaded sources like Google Benchmark)
+build/
+out/
+cmake-build-*/
+
+# CMake cache/generated files (in case CMake is ever run in-source)
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# Object files / binaries
+*.o
+*.obj
+*.a
+*.so
+*.exe
+
+# Editor/OS clutter
+.vscode/
+.DS_Store
