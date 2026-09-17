@@ -10,7 +10,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -DNDEBUG")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(OPENFHE_INSTALL_DIR "/mnt/d/openfhe_install" CACHE PATH "Path to OpenFHE install")
+# change openfhe install directory from /mnt/d/openfhe_install to /usr/local
+set(OPENFHE_INSTALL_DIR "/usr/local" CACHE PATH "Path to OpenFHE install")
 set(CMAKE_PREFIX_PATH "${OPENFHE_INSTALL_DIR}" ${CMAKE_PREFIX_PATH})
 find_package(OpenFHE REQUIRED)
 set(CMAKE_BUILD_RPATH "${OPENFHE_INSTALL_DIR}/lib")
@@ -26,7 +27,7 @@ FetchContent_Declare(
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 # Optional but recommended: silence benchmark's install() rules so it doesn't
 # interfere with your own project's install step, if you have one
-set(BENCHMARK_ENABLE_LIBPFM ON CACHE BOOL "" FORCE)
+# set(BENCHMARK_ENABLE_LIBPFM ON CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googlebenchmark)
 
