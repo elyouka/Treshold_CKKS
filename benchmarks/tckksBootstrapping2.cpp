@@ -168,12 +168,12 @@ public:
     DCRTPoly ptxtpoly           = ptxt1->GetElement<DCRTPoly>();
 
     std::cout << "Compressing ctxt to the smallest possible number of towers!\n";
-    inCtxt = cryptoContext->IntMPBootAdjustScale(inCtxt);
-
+    
     // INTERACTIVE BOOTSTRAPPING STARTS
-
+    
     while (state.KeepRunning()) {
-
+    inCtxt = cryptoContext->IntMPBootAdjustScale(inCtxt);
+    
     
     //std::cout << "\n============================ INTERACTIVE BOOTSTRAPPING STARTS ============================\n";
 
