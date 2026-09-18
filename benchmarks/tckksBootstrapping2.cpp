@@ -172,7 +172,11 @@ public:
     // INTERACTIVE BOOTSTRAPPING STARTS
     
     while (state.KeepRunning()) {
-    inCtxt = cryptoContext->IntMPBootAdjustScale(inCtxt);
+    state.PauseTiming();
+    auto ct = inCtxt->Clone();
+    state.ResumeTiming();
+
+    ct = cryptoContext->IntMPBootAdjustScale(ct);
     
     
     //std::cout << "\n============================ INTERACTIVE BOOTSTRAPPING STARTS ============================\n";
@@ -185,7 +189,7 @@ public:
     // Each party generates its own shares: maskedDecryptionShare and reEncryptionShare
     std::vector<std::vector<Ciphertext<DCRTPoly>>> sharesPairVec;
 
-    // Make a copy of input ciphertext and remove the first element (c0), we only
+    // Make a copy of input ciphertext and remove the first element (c0), we only need
     // c1 for IntMPBootDecrypt
     auto c1 = inCtxt->Clone();
     c1->GetElements().erase(c1->GetElements().begin());
