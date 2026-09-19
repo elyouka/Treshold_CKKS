@@ -27,7 +27,7 @@ FetchContent_Declare(
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 # Optional but recommended: silence benchmark's install() rules so it doesn't
 # interfere with your own project's install step, if you have one
-# set(BENCHMARK_ENABLE_LIBPFM ON CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_LIBPFM ON CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googlebenchmark)
 
