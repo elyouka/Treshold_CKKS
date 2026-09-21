@@ -5,6 +5,8 @@ project(OpenFHE_test LANGUAGES CXX)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
+# -03: optimization level 3(high)
+# -march=native: "Compile specifically for the CPU on the machine doing the compilation."
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -DNDEBUG")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -16,7 +18,7 @@ set(CMAKE_PREFIX_PATH "${OPENFHE_INSTALL_DIR}" ${CMAKE_PREFIX_PATH})
 find_package(OpenFHE REQUIRED)
 set(CMAKE_BUILD_RPATH "${OPENFHE_INSTALL_DIR}/lib")
 
-# --- NEW: fetch Google Benchmark automatically ---
+# --- fetch Google Benchmark automatically ---
 include(FetchContent)
 FetchContent_Declare(
     googlebenchmark
@@ -25,9 +27,12 @@ FetchContent_Declare(
 )
 # Disable benchmark's own test suite so it doesn't try to pull in googletest too
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+# Enable libpfm
+set(BENCHMARK_ENABLE_LIBPFM ON CACHE BOOL "" FORCE)
+# fixes some issues
+set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
 # Optional but recommended: silence benchmark's install() rules so it doesn't
 # interfere with your own project's install step, if you have one
-set(BENCHMARK_ENABLE_LIBPFM ON CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googlebenchmark)
 
