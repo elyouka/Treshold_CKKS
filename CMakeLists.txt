@@ -36,6 +36,9 @@ set(BENCHMARK_FORCE_WERROR OFF CACHE BOOL "" FORCE)
 # interfere with your own project's install step, if you have one
 set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googlebenchmark)
+# Disable pendatic warnings as error
+target_compile_options(benchmark PRIVATE -Wno-pedantic-errors)
+
 
 
 #function for adding executable for a class
