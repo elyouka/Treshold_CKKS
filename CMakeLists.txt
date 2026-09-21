@@ -29,8 +29,9 @@ FetchContent_Declare(
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 # Enable libpfm
 set(BENCHMARK_ENABLE_LIBPFM ON CACHE BOOL "" FORCE)
-# fixes some issues
+# Disable warnings being treated as errors
 set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_FORCE_WERROR OFF CACHE BOOL "" FORCE)
 # Optional but recommended: silence benchmark's install() rules so it doesn't
 # interfere with your own project's install step, if you have one
 set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
