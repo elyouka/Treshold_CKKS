@@ -71,6 +71,6 @@ endfunction()
 add_openfhe_executable(tckksBoot benchmarks/tckksBootstrapping2.cpp)
 add_openfhe_executable(bootstrapping examples/bootstrapping2.cpp)
 add_openfhe_executable(tckksRescale benchmarks/tckksRescale.cpp)
-add_openfhe_executable(tckksRelin benchmarks/tckksRelin.cpp)
-add_openfhe_executable(tckksBootAdjusted benchmarks/tckksBootAdjusted.cpp)
+add_openfhe_executable(tckksRelin benchmarks/parameters_adjusted/tckksRelinAdjusted.cpp)
+add_openfhe_executable(tckksBootAdjusted benchmarks/parameters_adjusted/tckksBootAdjusted.cpp)
 
