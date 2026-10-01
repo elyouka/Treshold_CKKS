@@ -83,6 +83,34 @@ KeyPair<DCRTPoly> kpMultiparty;
     return cc;
 }
 
+
+struct CKKSRelinSetup {
+    CryptoContext<DCRTPoly> cc;
+    KeyPair<DCRTPoly> keyPair;
+    Ciphertext<DCRTPoly> ciphertextMul;
+
+    CKKSRelinSetup() {
+        cc = GenerateCKKSContext();
+        keyPair = cc->KeyGen();
+        cc->EvalMultKeyGen(keyPair.secretKey);
+
+        usint slots = cc->GetEncodingParams()->GetBatchSize();
+        std::vector<std::complex<double>> vectorOfInts1(slots);
+        for (usint i = 0; i < slots; i++) {
+            vectorOfInts1[i] = 1.001 * i;
+        }
+        std::vector<std::complex<double>> vectorOfInts2(vectorOfInts1);
+
+        auto plaintext1 = cc->MakeCKKSPackedPlaintext(vectorOfInts1);
+        auto plaintext2 = cc->MakeCKKSPackedPlaintext(vectorOfInts2);
+
+        auto ciphertext1 = cc->Encrypt(keyPair.publicKey, plaintext1);
+        auto ciphertext2 = cc->Encrypt(keyPair.publicKey, plaintext2);
+
+        ciphertextMul = cc->EvalMultNoRelin(ciphertext1, ciphertext2);
+    }
+};
+
 [[maybe_unused]] static CryptoContext<DCRTPoly> GenerateTCKKSContext(uint32_t mdepth = 1) {
     //usint batchSize = 16;
 
@@ -141,37 +169,40 @@ KeyPair<DCRTPoly> kpMultiparty;
     return cc;
 }
 
+struct TCKKSRelinSetup {
+    CryptoContext<DCRTPoly> cc;
+    KeyPair<DCRTPoly> kpMultiparty;
+    Ciphertext<DCRTPoly> ciphertextMul;
 
-void CKKSrns_Relin(benchmark::State& state) {
-    CryptoContext<DCRTPoly> cc = GenerateCKKSContext();
+    TCKKSRelinSetup() {
+        cc = GenerateTCKKSContext();
+        
+    KeyPair<DCRTPoly> kp1;
+    KeyPair<DCRTPoly> kp2;
 
-    KeyPair<DCRTPoly> keyPair = cc->KeyGen();
-    cc->EvalMultKeyGen(keyPair.secretKey);
+    kp1 = cc->KeyGen();     
+    auto evalMultKey = cc->KeySwitchGen(kp1.secretKey, kp1.secretKey);
+    cc->EvalSumKeyGen(kp1.secretKey);
+    auto evalSumKeys =
+        std::make_shared<std::map<usint, EvalKey<DCRTPoly>>>(cc->GetEvalSumKeyMap(kp1.secretKey->GetKeyTag()));
+    // Round 2 (party B)
+    kp2 = cc->MultipartyKeyGen(kp1.publicKey);
 
-    usint slots = cc->GetEncodingParams()->GetBatchSize();
-    std::vector<std::complex<double>> vectorOfInts1(slots);
-    for (usint i = 0; i < slots; i++) {
-        vectorOfInts1[i] = 1.001 * i;
-    }
-    std::vector<std::complex<double>> vectorOfInts2(vectorOfInts1);
+    auto evalMultKey2 = cc->MultiKeySwitchGen(kp2.secretKey, kp2.secretKey, evalMultKey);
+    auto evalMultAB = cc->MultiAddEvalKeys(evalMultKey, evalMultKey2, kp2.publicKey->GetKeyTag());
+    auto evalMultBAB = cc->MultiMultEvalKey(kp2.secretKey, evalMultAB, kp2.publicKey->GetKeyTag());
+    // Compute SumKey
+    auto evalSumKeysB = cc->MultiEvalSumKeyGen(kp2.secretKey, evalSumKeys, kp2.publicKey->GetKeyTag());
+    //std::cout << "Joint evaluation summation key for (s_a + s_b) is generated..." << std::endl;
+    auto evalSumKeysJoin = cc->MultiAddEvalSumKeys(evalSumKeys, evalSumKeysB, kp2.publicKey->GetKeyTag());
+    cc->InsertEvalSumKey(evalSumKeysJoin);
+    // Round 3 (party A)
+    auto evalMultAAB = cc->MultiMultEvalKey(kp1.secretKey, evalMultAB, kp2.publicKey->GetKeyTag());
+    auto evalMultFinal = cc->MultiAddEvalMultKeys(evalMultAAB, evalMultBAB, evalMultAB->GetKeyTag());
 
-    auto plaintext1 = cc->MakeCKKSPackedPlaintext(vectorOfInts1);
-    auto plaintext2 = cc->MakeCKKSPackedPlaintext(vectorOfInts2);
+    cc->InsertEvalMultKey({evalMultFinal});
 
-    auto ciphertext1 = cc->Encrypt(keyPair.publicKey, plaintext1);
-    auto ciphertext2 = cc->Encrypt(keyPair.publicKey, plaintext2);
-
-    auto ciphertextMul = cc->EvalMultNoRelin(ciphertext1, ciphertext2);
-
-    while (state.KeepRunning()) {
-        auto ciphertext3 = cc->Relinearize(ciphertextMul);
-    }
-}
-
-BENCHMARK(CKKSrns_Relin)->Unit(benchmark::kMicrosecond);
-
-void TCKKS_Relin(benchmark::State& state) {
-    CryptoContext<DCRTPoly> cc = GenerateTCKKSContext();
+    kpMultiparty = kp2;
 
     usint slots = cc->GetEncodingParams()->GetBatchSize();
     std::vector<std::complex<double>> vectorOfInts1(slots);
@@ -187,9 +218,24 @@ void TCKKS_Relin(benchmark::State& state) {
     auto ciphertext2 = cc->Encrypt(kpMultiparty.publicKey, plaintext2);
 
     auto ciphertextMul = cc->EvalMultNoRelin(ciphertext1, ciphertext2);
+    }
+};
 
+void CKKSrns_Relin(benchmark::State& state) {
+    static CKKSRelinSetup setup;   // initialized once
     while (state.KeepRunning()) {
-        auto ciphertext3 = cc->Relinearize(ciphertextMul);
+        auto ciphertext3 = setup.cc->Relinearize(setup.ciphertextMul);
+        benchmark::DoNotOptimize(ciphertext3);
+    }
+}
+
+BENCHMARK(CKKSrns_Relin)->Unit(benchmark::kMicrosecond);
+
+void TCKKS_Relin(benchmark::State& state) {
+    static TCKKSRelinSetup setup;   // initialized once
+    while (state.KeepRunning()) {
+        auto ciphertext3 = setup.cc->Relinearize(setup.ciphertextMul);
+        benchmark::DoNotOptimize(ciphertext3);
     }
 }
 
