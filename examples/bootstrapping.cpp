@@ -85,6 +85,7 @@ struct boot_config {
 }
 
 [[maybe_unused]] static void CKKSBoot(benchmark::State& state) {
+    //3 is not chosen in the original example.
     auto t = boot_configs[3];
 
     CCParams<CryptoContextCKKSRNS> parameters;
