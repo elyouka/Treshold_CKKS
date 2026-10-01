@@ -175,7 +175,7 @@ struct TCKKSRelinSetup {
     Ciphertext<DCRTPoly> ciphertextMul;
 
     TCKKSRelinSetup() {
-        cc = GenerateTCKKSContext();
+    cc = GenerateTCKKSContext();
         
     KeyPair<DCRTPoly> kp1;
     KeyPair<DCRTPoly> kp2;
@@ -188,10 +188,10 @@ struct TCKKSRelinSetup {
     // Round 2 (party B)
     kp2 = cc->MultipartyKeyGen(kp1.publicKey);
 
-    auto evalMultKey2 = cc->MultiKeySwitchGen(kp2.secretKey, kp2.secretKey, evalMultKey);
     auto evalMultAB = cc->MultiAddEvalKeys(evalMultKey, evalMultKey2, kp2.publicKey->GetKeyTag());
     auto evalMultBAB = cc->MultiMultEvalKey(kp2.secretKey, evalMultAB, kp2.publicKey->GetKeyTag());
-    // Compute SumKey
+    // Compute SumKey    auto evalMultKey2 = cc->MultiKeySwitchGen(kp2.secretKey, kp2.secretKey, evalMultKey);
+
     auto evalSumKeysB = cc->MultiEvalSumKeyGen(kp2.secretKey, evalSumKeys, kp2.publicKey->GetKeyTag());
     //std::cout << "Joint evaluation summation key for (s_a + s_b) is generated..." << std::endl;
     auto evalSumKeysJoin = cc->MultiAddEvalSumKeys(evalSumKeys, evalSumKeysB, kp2.publicKey->GetKeyTag());
@@ -217,7 +217,7 @@ struct TCKKSRelinSetup {
     auto ciphertext1 = cc->Encrypt(kpMultiparty.publicKey, plaintext1);
     auto ciphertext2 = cc->Encrypt(kpMultiparty.publicKey, plaintext2);
 
-    auto ciphertextMul = cc->EvalMultNoRelin(ciphertext1, ciphertext2);
+    ciphertextMul = cc->EvalMultNoRelin(ciphertext1, ciphertext2);
     }
 };
 
