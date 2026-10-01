@@ -33,8 +33,6 @@ struct boot_config {
     ScalingTechnique stech;
 };
 
-KeyPair<DCRTPoly> kpMultiparty;
-
 [[maybe_unused]] std::vector<boot_config> boot_configs = {
     // ringDm,   slots, dcrtBits, firstMod, numDigits, lvlsAfter, iters,   lvlb,                skdst,                stech
     { 1 << 16, 1 << 15,       54,       60,        15,         9,     1, {3, 3},      UNIFORM_TERNARY,         FLEXIBLEAUTO},
@@ -140,32 +138,6 @@ struct CKKSRelinSetup {
     cc->Enable(ADVANCEDSHE);    //Advanced stuff, rotations, inner products...
     cc->Enable(MULTIPARTY);     //Threshold CKKS
 
-    KeyPair<DCRTPoly> kp1;
-    KeyPair<DCRTPoly> kp2;
-
-    kp1 = cc->KeyGen();     
-    auto evalMultKey = cc->KeySwitchGen(kp1.secretKey, kp1.secretKey);
-    cc->EvalSumKeyGen(kp1.secretKey);
-    auto evalSumKeys =
-        std::make_shared<std::map<usint, EvalKey<DCRTPoly>>>(cc->GetEvalSumKeyMap(kp1.secretKey->GetKeyTag()));
-    // Round 2 (party B)
-    kp2 = cc->MultipartyKeyGen(kp1.publicKey);
-
-    auto evalMultKey2 = cc->MultiKeySwitchGen(kp2.secretKey, kp2.secretKey, evalMultKey);
-    auto evalMultAB = cc->MultiAddEvalKeys(evalMultKey, evalMultKey2, kp2.publicKey->GetKeyTag());
-    auto evalMultBAB = cc->MultiMultEvalKey(kp2.secretKey, evalMultAB, kp2.publicKey->GetKeyTag());
-    // Compute SumKey
-    auto evalSumKeysB = cc->MultiEvalSumKeyGen(kp2.secretKey, evalSumKeys, kp2.publicKey->GetKeyTag());
-    //std::cout << "Joint evaluation summation key for (s_a + s_b) is generated..." << std::endl;
-    auto evalSumKeysJoin = cc->MultiAddEvalSumKeys(evalSumKeys, evalSumKeysB, kp2.publicKey->GetKeyTag());
-    cc->InsertEvalSumKey(evalSumKeysJoin);
-    // Round 3 (party A)
-    auto evalMultAAB = cc->MultiMultEvalKey(kp1.secretKey, evalMultAB, kp2.publicKey->GetKeyTag());
-    auto evalMultFinal = cc->MultiAddEvalMultKeys(evalMultAAB, evalMultBAB, evalMultAB->GetKeyTag());
-
-    cc->InsertEvalMultKey({evalMultFinal});
-
-    kpMultiparty = kp2;
     return cc;
 }
 
