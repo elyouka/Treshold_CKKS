@@ -201,7 +201,7 @@ void CKKSrns_Relin(benchmark::State& state) {
     }
 }
 
-BENCHMARK(CKKSrns_Relin)->Unit(benchmark::kMillisecond)->Iterations(5);
+BENCHMARK(CKKSrns_Relin)->Unit(benchmark::kMillisecond);
 
 void TCKKS_Relin(benchmark::State& state) {
     static TCKKSRelinSetup setup;   // initialized once
@@ -211,7 +211,7 @@ void TCKKS_Relin(benchmark::State& state) {
     }
 }
 
-BENCHMARK(TCKKS_Relin)->Unit(benchmark::kMillisecond)->Iterations(5);
+BENCHMARK(TCKKS_Relin)->Unit(benchmark::kMillisecond);
 
 
 BENCHMARK_MAIN();
