@@ -20,15 +20,60 @@ using namespace lbcrypto;
         Setup
 */
 
-KeyPair<DCRTPoly> kpMultiparty;
+struct boot_config {
+    uint32_t ringDim;
+    uint32_t slots;
+    uint32_t dcrtBits;
+    uint32_t firstMod;
+    uint32_t numDigits;
+    uint32_t lvlsAfter;
+    uint32_t iters;
+    std::vector<uint32_t> lvlb;
+    SecretKeyDist skdst;
+    ScalingTechnique stech;
+};
 
+[[maybe_unused]] std::vector<boot_config> boot_configs = {
+    // ringDm,   slots, dcrtBits, firstMod, numDigits, lvlsAfter, iters,   lvlb,                skdst,                stech
+    { 1 << 16, 1 << 15,       54,       60,        15,         9,     1, {3, 3},      UNIFORM_TERNARY,         FLEXIBLEAUTO},
+    { 1 << 16, 1 << 15,       50,       57,        11,         9,     2, {3, 3},      UNIFORM_TERNARY,         FLEXIBLEAUTO},
+    { 1 << 16, 1 << 15,       50,       57,        16,        10,     2, {3, 3},      UNIFORM_TERNARY,         FLEXIBLEAUTO},
+    { 1 << 16, 1 << 15,       52,       57,        10,         8,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 16, 1 << 15,       52,       57,        16,         9,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 17, 1 << 16,       59,       60,         0,         5,     1, {4, 4},       SPARSE_TERNARY,         FLEXIBLEAUTO},
+    { 1 << 17, 1 << 16,       59,       60,         0,         5,     1, {4, 4},  SPARSE_ENCAPSULATED,         FLEXIBLEAUTO},
+    { 1 << 16,  1 << 5,       59,       60,         0,         5,     1, {1, 1},       SPARSE_TERNARY,         FLEXIBLEAUTO},
+    { 1 << 16,  1 << 5,       59,       60,         0,         5,     1, {1, 1},  SPARSE_ENCAPSULATED,         FLEXIBLEAUTO},
+    { 1 << 17,  1 << 5,       59,       60,         0,         5,     1, {1, 1},       SPARSE_TERNARY,         FLEXIBLEAUTO},
+    { 1 << 17,  1 << 5,       59,       60,         0,         5,     1, {1, 1},  SPARSE_ENCAPSULATED,         FLEXIBLEAUTO},
+    { 1 << 17, 1 << 16,       59,       60,         0,        10,     1, {4, 4},  SPARSE_ENCAPSULATED,         FLEXIBLEAUTO},
+    { 1 << 17,  1 << 5,       59,       60,         0,        10,     1, {1, 1},  SPARSE_ENCAPSULATED,         FLEXIBLEAUTO},
+    { 1 << 17, 1 << 16,       59,       60,         0,        10,     2, {4, 4},  SPARSE_ENCAPSULATED,         FLEXIBLEAUTO},
+    { 1 << 17,  1 << 5,       59,       60,         0,        10,     2, {1, 1},  SPARSE_ENCAPSULATED,         FLEXIBLEAUTO},
+    { 1 << 16, 1 << 15,       55,       60,         3,          1,    1, {3, 3},      UNIFORM_TERNARY,         FLEXIBLEAUTO},  // GPU0
+    { 1 << 16, 1 << 14,       50,       53,         7,         10,    1, {3, 3},       SPARSE_TERNARY,         FLEXIBLEAUTO},  // GPU1
+    // TODO: enable following once STC Composite Scaling operational
+    // { 1 << 17, 1 << 16,       78,       96,         0,        10,     2, {4, 4},       SPARSE_TERNARY, COMPOSITESCALINGAUTO},
+};
 
 [[maybe_unused]] static CryptoContext<DCRTPoly> GenerateCKKSContext(uint32_t mdepth = 1) {
+
+    auto t = boot_configs[3];
+
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetScalingModSize(48);
-    parameters.SetBatchSize(8);
-    parameters.SetScalingTechnique(FIXEDMANUAL);
-    parameters.SetMultiplicativeDepth(mdepth);
+    parameters.SetSecurityLevel(HEStd_128_classic);
+    parameters.SetRingDim(t.ringDim);
+    parameters.SetScalingModSize(t.dcrtBits);
+    parameters.SetFirstModSize(t.firstMod);
+    parameters.SetNumLargeDigits(t.numDigits);
+    parameters.SetSecretKeyDist(t.skdst);
+    parameters.SetScalingTechnique(t.stech);
+    parameters.SetKeySwitchTechnique(HYBRID);
+    uint32_t depth = t.lvlsAfter + FHECKKSRNS::GetBootstrapDepth(t.lvlb, t.skdst) + (t.iters - 1);
+    parameters.SetMultiplicativeDepth(depth);
+    uint32_t batchSize = 1 << 15;
+    parameters.SetBatchSize(batchSize);
+
     auto cc = GenCryptoContext(parameters);
     cc->Enable(PKE);
     cc->Enable(KEYSWITCH);
@@ -36,13 +81,55 @@ KeyPair<DCRTPoly> kpMultiparty;
     return cc;
 }
 
+
+struct CKKSRescaleSetup {
+    CryptoContext<DCRTPoly> cc;
+    KeyPair<DCRTPoly> keyPair;
+    Ciphertext<DCRTPoly> ciphertextMul;
+
+    CKKSRescaleSetup() {
+        cc = GenerateCKKSContext();
+        keyPair = cc->KeyGen();
+        cc->EvalMultKeyGen(keyPair.secretKey);
+
+        usint slots = cc->GetEncodingParams()->GetBatchSize();
+        std::vector<std::complex<double>> vectorOfInts1(slots);
+        for (usint i = 0; i < slots; i++) {
+            vectorOfInts1[i] = 1.001 * i;
+        }
+        std::vector<std::complex<double>> vectorOfInts2(vectorOfInts1);
+
+        auto plaintext1 = cc->MakeCKKSPackedPlaintext(vectorOfInts1);
+        auto plaintext2 = cc->MakeCKKSPackedPlaintext(vectorOfInts2);
+
+        auto ciphertext1 = cc->Encrypt(keyPair.publicKey, plaintext1);
+        auto ciphertext2 = cc->Encrypt(keyPair.publicKey, plaintext2);
+
+        ciphertextMul = cc->EvalMult(ciphertext1, ciphertext2);
+    }
+};
+
 [[maybe_unused]] static CryptoContext<DCRTPoly> GenerateTCKKSContext(uint32_t mdepth = 1) {
     //usint batchSize = 16;
-    CCParams<CryptoContextCKKSRNS> parameters;  //holds configuration parameters
-    parameters.SetScalingModSize(48);
-    parameters.SetBatchSize(8);
-    parameters.SetScalingTechnique(FIXEDMANUAL);
-    parameters.SetMultiplicativeDepth(mdepth);
+
+    auto t = boot_configs[3];
+
+    CCParams<CryptoContextCKKSRNS> parameters;
+    SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
+    parameters.SetSecurityLevel(HEStd_128_classic);
+    parameters.SetRingDim(t.ringDim);
+    parameters.SetScalingModSize(t.dcrtBits);
+    parameters.SetFirstModSize(t.firstMod);
+    parameters.SetNumLargeDigits(t.numDigits);
+    parameters.SetSecretKeyDist(secretKeyDist);
+    parameters.SetScalingTechnique(t.stech);
+    parameters.SetKeySwitchTechnique(KeySwitchTechnique::HYBRID);
+    uint32_t depth = t.lvlsAfter + FHECKKSRNS::GetBootstrapDepth(t.lvlb, t.skdst) + (t.iters - 1);
+    parameters.SetMultiplicativeDepth(depth);
+    uint32_t batchSize = 1 << 15;
+    parameters.SetBatchSize(batchSize);
+    auto compressionLevel = CompressionLevel::COMPACT;
+    parameters.SetInteractiveBootCompressionLevel(compressionLevel);
    
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
     cc->Enable(PKE);            //Key-generation, encrypt, decrypt
@@ -51,6 +138,17 @@ KeyPair<DCRTPoly> kpMultiparty;
     cc->Enable(ADVANCEDSHE);    //Advanced stuff, rotations, inner products...
     cc->Enable(MULTIPARTY);     //Threshold CKKS
 
+    return cc;
+}
+
+struct TCKKSRescaleSetup {
+    CryptoContext<DCRTPoly> cc;
+    KeyPair<DCRTPoly> kpMultiparty;
+    Ciphertext<DCRTPoly> ciphertextMul;
+
+    TCKKSRescaleSetup() {
+    cc = GenerateTCKKSContext();
+        
     KeyPair<DCRTPoly> kp1;
     KeyPair<DCRTPoly> kp2;
 
@@ -77,40 +175,6 @@ KeyPair<DCRTPoly> kpMultiparty;
     cc->InsertEvalMultKey({evalMultFinal});
 
     kpMultiparty = kp2;
-    return cc;
-}
-
-
-void CKKSrns_Rescale(benchmark::State& state) {
-    CryptoContext<DCRTPoly> cc = GenerateCKKSContext();
-
-    KeyPair<DCRTPoly> keyPair = cc->KeyGen();
-    cc->EvalMultKeyGen(keyPair.secretKey);
-
-    usint slots = cc->GetEncodingParams()->GetBatchSize();
-    std::vector<std::complex<double>> vectorOfInts1(slots);
-    for (usint i = 0; i < slots; i++) {
-        vectorOfInts1[i] = 1.001 * i;
-    }
-    std::vector<std::complex<double>> vectorOfInts2(vectorOfInts1);
-
-    auto plaintext1 = cc->MakeCKKSPackedPlaintext(vectorOfInts1);
-    auto plaintext2 = cc->MakeCKKSPackedPlaintext(vectorOfInts2);
-
-    auto ciphertext1 = cc->Encrypt(keyPair.publicKey, plaintext1);
-    auto ciphertext2 = cc->Encrypt(keyPair.publicKey, plaintext2);
-
-    auto ciphertextMul = cc->EvalMult(ciphertext1, ciphertext2);
-
-    while (state.KeepRunning()) {
-        auto ciphertext3 = cc->ModReduce(ciphertextMul);
-    }
-}
-
-BENCHMARK(CKKSrns_Rescale)->Unit(benchmark::kMicrosecond);
-
-void TCKKS_Rescale(benchmark::State& state) {
-    CryptoContext<DCRTPoly> cc = GenerateTCKKSContext();
 
     usint slots = cc->GetEncodingParams()->GetBatchSize();
     std::vector<std::complex<double>> vectorOfInts1(slots);
@@ -125,14 +189,31 @@ void TCKKS_Rescale(benchmark::State& state) {
     auto ciphertext1 = cc->Encrypt(kpMultiparty.publicKey, plaintext1);
     auto ciphertext2 = cc->Encrypt(kpMultiparty.publicKey, plaintext2);
 
-    auto ciphertextMul = cc->EvalMult(ciphertext1, ciphertext2);
+    ciphertextMul = cc->EvalMult(ciphertext1, ciphertext2);
+    }
+};
 
+
+void CKKSrns_Rescale(benchmark::State& state) {
+    static CKKSRescaleSetup setup;
+    
     while (state.KeepRunning()) {
-        auto ciphertext3 = cc->ModReduce(ciphertextMul);
+        auto ciphertext3 = setup.cc->ModReduce(setup.ciphertextMul);
+        benchmark::DoNotOptimize(ciphertext3);
     }
 }
 
-BENCHMARK(TCKKS_Rescale)->Unit(benchmark::kMicrosecond);
+BENCHMARK(CKKSrns_Rescale)->Unit(benchmark::kMillisecond);
+
+void TCKKS_Rescale(benchmark::State& state) {
+    static TCKKSRescaleSetup setup;
+
+    while (state.KeepRunning()) {
+        auto ciphertext3 = setup.cc->ModReduce(setup.ciphertextMul);
+    }
+}
+
+BENCHMARK(TCKKS_Rescale)->Unit(benchmark::kMillisecond);
 
 
 
