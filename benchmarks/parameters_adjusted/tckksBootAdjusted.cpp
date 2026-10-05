@@ -234,6 +234,6 @@ public:
     std::cout << "\n============================ INTERACTIVE BOOTSTRAPPING ENDED ============================\n";
 }
 
-BENCHMARK(TCKKSCollectiveBoot)->Unit(benchmark::kMilliSecond);
+BENCHMARK(TCKKSCollectiveBoot)->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();
