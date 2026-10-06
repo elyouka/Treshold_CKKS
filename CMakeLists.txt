@@ -73,6 +73,6 @@ add_openfhe_executable(bootstrapping examples/bootstrapping2.cpp)
 add_openfhe_executable(tckksRescale benchmarks/parameters_adjusted/tckksRescaleAdjusted.cpp)
 add_openfhe_executable(tckksRelin benchmarks/parameters_adjusted/tckksRelinAdjusted.cpp)
 add_openfhe_executable(tckksBootAdjusted benchmarks/parameters_adjusted/tckksBootAdjusted.cpp)
-add_openfhe_executable(NTT benchmarks/parameters_adjusted/NTTAdjusted.cpp)
+add_openfhe_executable(NTT benchmarks/parameters_adjusted/NTTadjusted.cpp)
 
 
