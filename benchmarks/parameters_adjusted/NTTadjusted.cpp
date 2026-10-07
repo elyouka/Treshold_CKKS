@@ -4,7 +4,7 @@
 using namespace lbcrypto;
 
 [[maybe_unused]] static void RingArgs(benchmark::internal::Benchmark* b) {
-    for (uint32_t r : {1024, 4096, 8192, 16384, 32768, 65536})
+    for (uint32_t r : {1024, 4096, 8192, 16384, 32768, 65536, 131072, 262144})
         b->ArgName("ringdm")->Arg(r);
 }
 
