@@ -68,9 +68,9 @@ struct boot_config {
         b->ArgName("Config")->Arg(i);
 }
 
-[[maybe_unused]] static CryptoContext<DCRTPoly> GenerateCKKSContext(uint32_t mdepth = 1) {
+[[maybe_unused]] static CryptoContext<DCRTPoly> GenerateCKKSContext(uint32_t n) {
 
-    auto t = boot_configs[0];
+    auto t = boot_configs[n];
 
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetSecurityLevel(HEStd_NotSet);
@@ -128,7 +128,7 @@ struct CKKSRelinSetup {
 
     CCParams<CryptoContextCKKSRNS> parameters;
     SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
-    parameters.SetSecurityLevel(HEStd_128_classic);
+    parameters.SetSecurityLevel(HEStd_NotSet);
     parameters.SetRingDim(t.ringDim);
     parameters.SetScalingModSize(t.dcrtBits);
     parameters.SetFirstModSize(t.firstMod);
