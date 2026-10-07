@@ -165,9 +165,9 @@ struct TCKKSRescaleSetup {
 
     kp1 = cc->KeyGen();     
     auto evalMultKey = cc->KeySwitchGen(kp1.secretKey, kp1.secretKey);
-    cc->EvalSumKeyGen(kp1.secretKey);
-    auto evalSumKeys =
-        std::make_shared<std::map<usint, EvalKey<DCRTPoly>>>(cc->GetEvalSumKeyMap(kp1.secretKey->GetKeyTag()));
+    //cc->EvalSumKeyGen(kp1.secretKey);
+    //auto evalSumKeys =
+    //    std::make_shared<std::map<usint, EvalKey<DCRTPoly>>>(cc->GetEvalSumKeyMap(kp1.secretKey->GetKeyTag()));
     // Round 2 (party B)
     kp2 = cc->MultipartyKeyGen(kp1.publicKey);
 
@@ -175,10 +175,10 @@ struct TCKKSRescaleSetup {
     auto evalMultAB = cc->MultiAddEvalKeys(evalMultKey, evalMultKey2, kp2.publicKey->GetKeyTag());
     auto evalMultBAB = cc->MultiMultEvalKey(kp2.secretKey, evalMultAB, kp2.publicKey->GetKeyTag());
     // Compute SumKey
-    auto evalSumKeysB = cc->MultiEvalSumKeyGen(kp2.secretKey, evalSumKeys, kp2.publicKey->GetKeyTag());
+    //auto evalSumKeysB = cc->MultiEvalSumKeyGen(kp2.secretKey, evalSumKeys, kp2.publicKey->GetKeyTag());
     //std::cout << "Joint evaluation summation key for (s_a + s_b) is generated..." << std::endl;
-    auto evalSumKeysJoin = cc->MultiAddEvalSumKeys(evalSumKeys, evalSumKeysB, kp2.publicKey->GetKeyTag());
-    cc->InsertEvalSumKey(evalSumKeysJoin);
+    //auto evalSumKeysJoin = cc->MultiAddEvalSumKeys(evalSumKeys, evalSumKeysB, kp2.publicKey->GetKeyTag());
+    //cc->InsertEvalSumKey(evalSumKeysJoin);
     // Round 3 (party A)
     auto evalMultAAB = cc->MultiMultEvalKey(kp1.secretKey, evalMultAB, kp2.publicKey->GetKeyTag());
     auto evalMultFinal = cc->MultiAddEvalMultKeys(evalMultAAB, evalMultBAB, evalMultAB->GetKeyTag());
