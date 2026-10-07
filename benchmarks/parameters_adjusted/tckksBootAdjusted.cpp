@@ -89,7 +89,7 @@ public:
 	* encryption standard.
 	*/
     SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
-    parameters.SetSecurityLevel(HEStd_128_classic);
+    parameters.SetSecurityLevel(HEStd_NotSet);
     parameters.SetRingDim(t.ringDim);
     parameters.SetScalingModSize(t.dcrtBits);
     parameters.SetFirstModSize(t.firstMod);
@@ -100,7 +100,7 @@ public:
     uint32_t multiplicativeDepth = 28;
     parameters.SetMultiplicativeDepth(multiplicativeDepth);
     uint32_t batchSize = 1 << 15;
-    parameters.SetBatchSize(batchSize);
+    parameters.SetBatchSize(t.slots);
     auto compressionLevel = CompressionLevel::SLACK;
     parameters.SetInteractiveBootCompressionLevel(compressionLevel);
 

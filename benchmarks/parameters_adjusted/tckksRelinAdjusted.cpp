@@ -66,7 +66,7 @@ struct boot_config {
     auto t = boot_configs[0];
 
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetSecurityLevel(HEStd_128_classic);
+    parameters.SetSecurityLevel(HEStd_NotSet);
     parameters.SetRingDim(t.ringDim);
     parameters.SetScalingModSize(t.dcrtBits);
     parameters.SetFirstModSize(t.firstMod);
@@ -77,7 +77,7 @@ struct boot_config {
     uint32_t depth = t.lvlsAfter + FHECKKSRNS::GetBootstrapDepth(t.lvlb, t.skdst) + (t.iters - 1);
     parameters.SetMultiplicativeDepth(depth);
     uint32_t batchSize = 1 << 15;
-    parameters.SetBatchSize(batchSize);
+    parameters.SetBatchSize(t.slots);
 
     auto cc = GenCryptoContext(parameters);
     cc->Enable(PKE);

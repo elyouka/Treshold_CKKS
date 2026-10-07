@@ -68,12 +68,12 @@ struct boot_config {
         b->ArgName("Config")->Arg(i);
 }
 
-[[maybe_unused]] static CryptoContext<DCRTPoly> GenerateCKKSContext(uint32_t mdepth = 1) {
+[[maybe_unused]] static CryptoContext<DCRTPoly> GenerateCKKSContext(uint32_t n) {
 
-    auto t = boot_configs[0];
+    auto t = boot_configs[n];
 
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetSecurityLevel(HEStd_128_classic);
+    parameters.SetSecurityLevel(HEStd_NotSet);
     parameters.SetRingDim(t.ringDim);
     parameters.SetScalingModSize(t.dcrtBits);
     parameters.SetFirstModSize(t.firstMod);
@@ -98,8 +98,8 @@ struct CKKSRescaleSetup {
     KeyPair<DCRTPoly> keyPair;
     Ciphertext<DCRTPoly> ciphertextMul;
 
-    CKKSRescaleSetup() {
-        cc = GenerateCKKSContext();
+    CKKSRescaleSetup(uint32_t n) {
+        cc = GenerateCKKSContext(n);
         keyPair = cc->KeyGen();
         cc->EvalMultKeyGen(keyPair.secretKey);
 
@@ -120,10 +120,10 @@ struct CKKSRescaleSetup {
     }
 };
 
-[[maybe_unused]] static CryptoContext<DCRTPoly> GenerateTCKKSContext(uint32_t mdepth = 1) {
+[[maybe_unused]] static CryptoContext<DCRTPoly> GenerateTCKKSContext(uint32_t n) {
     //usint batchSize = 16;
 
-    auto t = boot_configs[0];
+    auto t = boot_configs[n];
 
     CCParams<CryptoContextCKKSRNS> parameters;
     SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
@@ -157,8 +157,8 @@ struct TCKKSRescaleSetup {
     KeyPair<DCRTPoly> kpMultiparty;
     Ciphertext<DCRTPoly> ciphertextMul;
 
-    TCKKSRescaleSetup() {
-    cc = GenerateTCKKSContext();
+    TCKKSRescaleSetup(uint32_t n) {
+    cc = GenerateTCKKSContext(n);
         
     KeyPair<DCRTPoly> kp1;
     KeyPair<DCRTPoly> kp2;
@@ -206,7 +206,8 @@ struct TCKKSRescaleSetup {
 
 
 void CKKSrns_Rescale(benchmark::State& state) {
-    static CKKSRescaleSetup setup;
+    uint32_t n = state.range(0);
+    static CKKSRescaleSetup setup(n);
     
     while (state.KeepRunning()) {
         auto ciphertext3 = setup.cc->ModReduce(setup.ciphertextMul);
@@ -214,17 +215,18 @@ void CKKSrns_Rescale(benchmark::State& state) {
     }
 }
 
-BENCHMARK(CKKSrns_Rescale)->Unit(benchmark::kMillisecond);
+BENCHMARK(CKKSrns_Rescale)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
 
 void TCKKS_Rescale(benchmark::State& state) {
-    static TCKKSRescaleSetup setup;
+    uint32_t n = state.range(0);
+    static TCKKSRescaleSetup setup(n);
 
     while (state.KeepRunning()) {
         auto ciphertext3 = setup.cc->ModReduce(setup.ciphertextMul);
     }
 }
 
-BENCHMARK(TCKKS_Rescale)->Unit(benchmark::kMillisecond);
+BENCHMARK(TCKKS_Rescale)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
 
 
 
