@@ -56,6 +56,11 @@ struct boot_config {
     // { 1 << 17, 1 << 16,       78,       96,         0,        10,     2, {4, 4},       SPARSE_TERNARY, COMPOSITESCALINGAUTO},
 };
 
+[[maybe_unused]] static void BootConfigs(benchmark::internal::Benchmark* b) {
+    for (uint32_t i = 0; i < boot_configs.size(); ++i)
+        b->ArgName("Config")->Arg(i);
+}
+
 [[maybe_unused]] static CryptoContext<DCRTPoly> GenerateCKKSContext(uint32_t mdepth = 1) {
 
     auto t = boot_configs[2];

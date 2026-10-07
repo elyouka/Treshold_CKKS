@@ -33,7 +33,7 @@ struct boot_config {
     ScalingTechnique stech;
 };
 
-[[maybe_unused]] std::vector<boot_config> boot_configs = {
+/*[[maybe_unused]] std::vector<boot_config> boot_configs = {
     // ringDm,   slots, dcrtBits, firstMod, numDigits, lvlsAfter, iters,   lvlb,                skdst,                stech
     { 1 << 16, 1 << 15,       54,       60,        15,         9,     1, {3, 3},      UNIFORM_TERNARY,         FLEXIBLEAUTO},
     { 1 << 16, 1 << 15,       50,       57,        11,         9,     2, {3, 3},      UNIFORM_TERNARY,         FLEXIBLEAUTO},
@@ -54,7 +54,19 @@ struct boot_config {
     { 1 << 16, 1 << 14,       50,       53,         7,         10,    1, {3, 3},       SPARSE_TERNARY,         FLEXIBLEAUTO},  // GPU1
     // TODO: enable following once STC Composite Scaling operational
     // { 1 << 17, 1 << 16,       78,       96,         0,        10,     2, {4, 4},       SPARSE_TERNARY, COMPOSITESCALINGAUTO},
+};*/
+
+[[maybe_unused]] std::vector<boot_config> boot_configs = {
+    // ringDm,   slots, dcrtBits, firstMod, numDigits, lvlsAfter, iters,   lvlb,                skdst,                stech
+    { 1 << 14, 1 << 13,       52,       57,        10,         8,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 15, 1 << 14,       52,       57,        10,         8,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 16, 1 << 15,       52,       57,        10,         8,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
 };
+
+[[maybe_unused]] static void BootConfigs(benchmark::internal::Benchmark* b) {
+    for (uint32_t i = 0; i < boot_configs.size(); ++i)
+        b->ArgName("Config")->Arg(i);
+}
 
 [[maybe_unused]] static CryptoContext<DCRTPoly> GenerateCKKSContext(uint32_t mdepth = 1) {
 
@@ -71,8 +83,7 @@ struct boot_config {
     parameters.SetKeySwitchTechnique(HYBRID);
     uint32_t depth = t.lvlsAfter + FHECKKSRNS::GetBootstrapDepth(t.lvlb, t.skdst) + (t.iters - 1);
     parameters.SetMultiplicativeDepth(depth);
-    uint32_t batchSize = 1 << 15;
-    parameters.SetBatchSize(batchSize);
+    parameters.SetBatchSize(t.slots);
 
     auto cc = GenCryptoContext(parameters);
     cc->Enable(PKE);
@@ -127,7 +138,7 @@ struct CKKSRescaleSetup {
     uint32_t depth = t.lvlsAfter + FHECKKSRNS::GetBootstrapDepth(t.lvlb, t.skdst) + (t.iters - 1);
     parameters.SetMultiplicativeDepth(depth);
     uint32_t batchSize = 1 << 15;
-    parameters.SetBatchSize(batchSize);
+    parameters.SetBatchSize(t.slots);
     auto compressionLevel = CompressionLevel::COMPACT;
     parameters.SetInteractiveBootCompressionLevel(compressionLevel);
    
