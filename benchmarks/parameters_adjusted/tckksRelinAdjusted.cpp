@@ -92,8 +92,8 @@ struct CKKSRelinSetup {
     KeyPair<DCRTPoly> keyPair;
     Ciphertext<DCRTPoly> ciphertextMul;
 
-    CKKSRelinSetup() {
-        cc = GenerateCKKSContext();
+    CKKSRelinSetup(uint32_t n) {
+        cc = GenerateCKKSContext(n);
         keyPair = cc->KeyGen();
         cc->EvalMultKeyGen(keyPair.secretKey);
 
@@ -114,10 +114,10 @@ struct CKKSRelinSetup {
     }
 };
 
-[[maybe_unused]] static CryptoContext<DCRTPoly> GenerateTCKKSContext(uint32_t mdepth = 1) {
+[[maybe_unused]] static CryptoContext<DCRTPoly> GenerateTCKKSContext(uint32_t n) {
     //usint batchSize = 16;
 
-    auto t = boot_configs[0];
+    auto t = boot_configs[n];
 
     CCParams<CryptoContextCKKSRNS> parameters;
     SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
@@ -151,8 +151,8 @@ struct TCKKSRelinSetup {
     KeyPair<DCRTPoly> kpMultiparty;
     Ciphertext<DCRTPoly> ciphertextMul;
 
-    TCKKSRelinSetup() {
-    cc = GenerateTCKKSContext();
+    TCKKSRelinSetup(uint32_t n) {
+    cc = GenerateTCKKSContext(n);
         
     KeyPair<DCRTPoly> kp1;
     KeyPair<DCRTPoly> kp2;
@@ -198,25 +198,40 @@ struct TCKKSRelinSetup {
     }
 };
 
+template <typename Setup>
+static Setup& GetSetup(uint32_t configIndex) {
+    static std::map<uint32_t, std::unique_ptr<Setup>> cache;
+    static uint32_t lastKey = std::numeric_limits<uint32_t>::max();
+    if (lastKey != configIndex) {
+        cache.clear();  // free all previous setups
+        lastKey = configIndex;
+    }
+    auto& slot = cache[configIndex];
+    if (!slot) slot = std::make_unique<Setup>(configIndex);
+    return *slot;
+}
+
 void CKKSrns_Relin(benchmark::State& state) {
-    static CKKSRelinSetup setup;   // initialized once
+    uint32_t n = state.range(0);
+    auto& setup = GetSetup<CKKSRelinSetup>(n);   // initialized once
     while (state.KeepRunning()) {
         auto ciphertext3 = setup.cc->Relinearize(setup.ciphertextMul);
         benchmark::DoNotOptimize(ciphertext3);
     }
 }
 
-BENCHMARK(CKKSrns_Relin)->Unit(benchmark::kMillisecond);
+BENCHMARK(CKKSrns_Relin)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
 
 void TCKKS_Relin(benchmark::State& state) {
-    static TCKKSRelinSetup setup;   // initialized once
+    uint32_t n = state.range(0);
+    auto& setup = GetSetup<TCKKSRelinSetup>(n);   // initialized once
     while (state.KeepRunning()) {
         auto ciphertext3 = setup.cc->Relinearize(setup.ciphertextMul);
         benchmark::DoNotOptimize(ciphertext3);
     }
 }
 
-BENCHMARK(TCKKS_Relin)->Unit(benchmark::kMillisecond);
+BENCHMARK(TCKKS_Relin)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
 
 
 BENCHMARK_MAIN();
