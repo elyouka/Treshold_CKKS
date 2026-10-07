@@ -127,7 +127,7 @@ struct CKKSRescaleSetup {
 
     CCParams<CryptoContextCKKSRNS> parameters;
     SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
-    parameters.SetSecurityLevel(HEStd_128_classic);
+    parameters.SetSecurityLevel(HEStd_NotSet);
     parameters.SetRingDim(t.ringDim);
     parameters.SetScalingModSize(t.dcrtBits);
     parameters.SetFirstModSize(t.firstMod);
@@ -204,10 +204,22 @@ struct TCKKSRescaleSetup {
     }
 };
 
+template <typename Setup>
+static Setup& GetSetup(uint32_t configIndex) {
+    static std::map<uint32_t, std::unique_ptr<Setup>> cache;
+    static uint32_t lastKey = std::numeric_limits<uint32_t>::max();
+    if (lastKey != configIndex) {
+        cache.clear();  // free all previous setups
+        lastKey = configIndex;
+    }
+    auto& slot = cache[configIndex];
+    if (!slot) slot = std::make_unique<Setup>(configIndex);
+    return *slot;
+}
 
 void CKKSrns_Rescale(benchmark::State& state) {
     uint32_t n = state.range(0);
-    static CKKSRescaleSetup setup(n);
+    auto& setup = GetSetup<CKKSRescaleSetup>(n);
     
     while (state.KeepRunning()) {
         auto ciphertext3 = setup.cc->ModReduce(setup.ciphertextMul);
@@ -219,10 +231,11 @@ BENCHMARK(CKKSrns_Rescale)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
 
 void TCKKS_Rescale(benchmark::State& state) {
     uint32_t n = state.range(0);
-    static TCKKSRescaleSetup setup(n);
+    auto& setup = GetSetup<TCKKSRescaleSetup>(n);
 
     while (state.KeepRunning()) {
         auto ciphertext3 = setup.cc->ModReduce(setup.ciphertextMul);
+        benchmark::DoNotOptimize(ciphertext3);
     }
 }
 
