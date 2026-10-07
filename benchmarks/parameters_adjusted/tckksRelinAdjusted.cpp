@@ -63,7 +63,7 @@ struct boot_config {
 
 [[maybe_unused]] static CryptoContext<DCRTPoly> GenerateCKKSContext(uint32_t mdepth = 1) {
 
-    auto t = boot_configs[2];
+    auto t = boot_configs[0];
 
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetSecurityLevel(HEStd_128_classic);
@@ -117,7 +117,7 @@ struct CKKSRelinSetup {
 [[maybe_unused]] static CryptoContext<DCRTPoly> GenerateTCKKSContext(uint32_t mdepth = 1) {
     //usint batchSize = 16;
 
-    auto t = boot_configs[2];
+    auto t = boot_configs[0];
 
     CCParams<CryptoContextCKKSRNS> parameters;
     SecretKeyDist secretKeyDist = UNIFORM_TERNARY;

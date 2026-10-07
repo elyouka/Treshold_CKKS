@@ -78,7 +78,7 @@ public:
 
 [[maybe_unused]] static void TCKKSCollectiveBoot(benchmark::State& state) {
 
-    auto t = boot_configs[3];
+    auto t = boot_configs[0];
 
     CCParams<CryptoContextCKKSRNS> parameters;
     // A. Specify main parameters
