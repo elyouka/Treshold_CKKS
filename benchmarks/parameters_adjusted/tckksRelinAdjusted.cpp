@@ -58,9 +58,9 @@ struct boot_config {
 
 [[maybe_unused]] std::vector<boot_config> boot_configs = {
     // ringDm,   slots, dcrtBits, firstMod, numDigits, lvlsAfter, iters,   lvlb,                skdst,                stech
-    { 1 << 14, 1 << 13,       52,       57,        10,         8,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
-    { 1 << 15, 1 << 14,       52,       57,        10,         8,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
-    { 1 << 16, 1 << 15,       52,       57,        10,         8,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 14, 1 << 13,       52,       57,        16,         9,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 15, 1 << 14,       52,       57,        16,         9,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 16, 1 << 15,       52,       57,        16,         9,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
 };
 
 [[maybe_unused]] static void BootConfigs(benchmark::internal::Benchmark* b) {

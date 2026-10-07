@@ -48,7 +48,7 @@ public:
 // We follow Protocol 5 in https://eprint.iacr.org/2020/304, "Multiparty
 // Homomorphic Encryption from Ring-Learning-With-Errors"
 
-[[maybe_unused]] std::vector<boot_config> boot_configs = {
+/*[[maybe_unused]] std::vector<boot_config> boot_configs = {
     // ringDm,   slots, dcrtBits, firstMod, numDigits, lvlsAfter, iters,   lvlb,                skdst,                stech
     { 1 << 16, 1 << 15,       54,       60,        15,         9,     1, {3, 3},      UNIFORM_TERNARY,         FLEXIBLEAUTO},
     { 1 << 16, 1 << 15,       50,       57,        11,         9,     2, {3, 3},      UNIFORM_TERNARY,         FLEXIBLEAUTO},
@@ -69,6 +69,13 @@ public:
     { 1 << 16, 1 << 14,       50,       53,         7,         10,    1, {3, 3},       SPARSE_TERNARY,         FLEXIBLEAUTO},  // GPU1
     // TODO: enable following once STC Composite Scaling operational
     // { 1 << 17, 1 << 16,       78,       96,         0,        10,     2, {4, 4},       SPARSE_TERNARY, COMPOSITESCALINGAUTO},
+};*/
+
+[[maybe_unused]] std::vector<boot_config> boot_configs = {
+    // ringDm,   slots, dcrtBits, firstMod, numDigits, lvlsAfter, iters,   lvlb,                skdst,                stech
+    { 1 << 14, 1 << 13,       52,       57,        16,         9,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 15, 1 << 14,       52,       57,        16,         9,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 16, 1 << 15,       52,       57,        16,         9,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
 };
 
 [[maybe_unused]] static void BootConfigs(benchmark::internal::Benchmark* b) {
@@ -78,7 +85,7 @@ public:
 
 [[maybe_unused]] static void TCKKSCollectiveBoot(benchmark::State& state) {
 
-    auto t = boot_configs[0];
+    auto t = boot_configs[state.range(0)];
 
     CCParams<CryptoContextCKKSRNS> parameters;
     // A. Specify main parameters
@@ -97,9 +104,11 @@ public:
     parameters.SetSecretKeyDist(secretKeyDist);
     parameters.SetScalingTechnique(t.stech);
     parameters.SetKeySwitchTechnique(KeySwitchTechnique::HYBRID);
-    uint32_t multiplicativeDepth = 28;
-    parameters.SetMultiplicativeDepth(multiplicativeDepth);
-    uint32_t batchSize = 1 << 15;
+    //uint32_t multiplicativeDepth = 28;
+    uint32_t depth = t.lvlsAfter + FHECKKSRNS::GetBootstrapDepth(t.lvlb, t.skdst) + (t.iters - 1);
+    parameters.SetMultiplicativeDepth(depth);
+    //parameters.SetMultiplicativeDepth(multiplicativeDepth);
+    //std::cout << "Scheme is using depth: " << depth <<  "\n";
     parameters.SetBatchSize(t.slots);
     auto compressionLevel = CompressionLevel::SLACK;
     parameters.SetInteractiveBootCompressionLevel(compressionLevel);
@@ -140,16 +149,16 @@ public:
     usint ringDim = t.ringDim;
     // This is the maximum number of slots that can be used for full packing.
     usint maxNumSlots = ringDim / 2;
-    std::cout << "TCKKS scheme is using ring dimension " << ringDim << std::endl;
-    std::cout << "TCKKS scheme number of slots         " << batchSize << std::endl;
-    std::cout << "TCKKS scheme max number of slots     " << maxNumSlots << std::endl;
-    std::cout << "TCKKS example with Scaling Technique " << FIXEDMANUAL << std::endl;
+    //std::cout << "TCKKS scheme is using ring dimension " << t.ringDim << std::endl;
+    //std::cout << "TCKKS scheme number of slots         " << t.slots << std::endl;
+    //std::cout << "TCKKS scheme max number of slots     " << t.ringDim/2 << std::endl;
+    //std::cout << "TCKKS example with Scaling Technique " << t.stech << std::endl;
 
     const usint numParties = 3;  // n: number of parties involved in the interactive protocol
 
-    std::cout << "\n===========================IntMPBoot protocol parameters===========================\n";
-    std::cout << "number of parties: " << numParties << "\n";
-    std::cout << "===============================================================\n";
+   // std::cout << "\n===========================IntMPBoot protocol parameters===========================\n";
+    //std::cout << "number of parties: " << numParties << "\n";
+    //std::cout << "===============================================================\n";
 
     std::vector<Party> parties(numParties);
 
@@ -160,20 +169,20 @@ public:
     // Perform Key Generation Operation
     ////////////////////////////////////////////////////////////
 
-    std::cout << "Running key generation (used for source data)..." << std::endl;
+    //std::cout << "Running key generation (used for source data)..." << std::endl;
 
     // Initialization - Assuming numParties (n) of parties
     // P0 is the leading party
     for (usint i = 0; i < numParties; i++) {
         parties[i].id = i;
-        std::cout << "Party " << parties[i].id << " started.\n";
+        //std::cout << "Party " << parties[i].id << " started.\n";
         if (0 == i)
             parties[i].kpShard = cryptoContext->KeyGen();
         else
             parties[i].kpShard = cryptoContext->MultipartyKeyGen(parties[0].kpShard.publicKey);
-        std::cout << "Party " << i << " key generation completed.\n";
+        //std::cout << "Party " << i << " key generation completed.\n";
     }
-    std::cout << "Joint public key for (s_0 + s_1 + ... + s_n) is generated..." << std::endl;
+   // std::cout << "Joint public key for (s_0 + s_1 + ... + s_n) is generated..." << std::endl;
 
     // Assert everything is good
     for (usint i = 0; i < numParties; i++) {
@@ -198,7 +207,7 @@ public:
     Ciphertext<DCRTPoly> inCtxt = cryptoContext->Encrypt(kpMultiparty.publicKey, ptxt1);
     DCRTPoly ptxtpoly           = ptxt1->GetElement<DCRTPoly>();
 
-    std::cout << "Compressing ctxt to the smallest possible number of towers!\n";
+    //std::cout << "Compressing ctxt to the smallest possible number of towers!\n";
     
     // INTERACTIVE BOOTSTRAPPING STARTS
     
@@ -237,9 +246,9 @@ public:
     benchmark::DoNotOptimize(outCtxt);    
     }
     // INTERACTIVE BOOTSTRAPPING ENDS
-    std::cout << "\n============================ INTERACTIVE BOOTSTRAPPING ENDED ============================\n";
+    //std::cout << "\n============================ INTERACTIVE BOOTSTRAPPING ENDED ============================\n";
 }
 
-BENCHMARK(TCKKSCollectiveBoot)->Unit(benchmark::kMillisecond);
+BENCHMARK(TCKKSCollectiveBoot)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
 
 BENCHMARK_MAIN();
