@@ -83,7 +83,6 @@ struct boot_config {
     parameters.SetKeySwitchTechnique(HYBRID);
     uint32_t depth = t.lvlsAfter + FHECKKSRNS::GetBootstrapDepth(t.lvlb, t.skdst) + (t.iters - 1);
     parameters.SetMultiplicativeDepth(depth);
-    uint32_t batchSize = 1 << 15;
     parameters.SetBatchSize(t.slots);
 
     auto cc = GenCryptoContext(parameters);
@@ -138,8 +137,7 @@ struct CKKSRelinSetup {
     parameters.SetKeySwitchTechnique(KeySwitchTechnique::HYBRID);
     uint32_t depth = t.lvlsAfter + FHECKKSRNS::GetBootstrapDepth(t.lvlb, t.skdst) + (t.iters - 1);
     parameters.SetMultiplicativeDepth(depth);
-    uint32_t batchSize = 1 << 15;
-    parameters.SetBatchSize(batchSize);
+    parameters.SetBatchSize(t.slots);
     auto compressionLevel = CompressionLevel::COMPACT;
     parameters.SetInteractiveBootCompressionLevel(compressionLevel);
    
