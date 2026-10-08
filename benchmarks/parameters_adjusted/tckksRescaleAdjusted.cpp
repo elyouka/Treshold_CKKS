@@ -220,7 +220,8 @@ static Setup& GetSetup(uint32_t configIndex) {
 void CKKSrns_Rescale(benchmark::State& state) {
     uint32_t n = state.range(0);
     auto& setup = GetSetup<CKKSRescaleSetup>(n);
-    
+    state.counters["ring-dim"]  = std::log2(boot_configs[n].ringDim);
+
     while (state.KeepRunning()) {
         auto ciphertext3 = setup.cc->ModReduce(setup.ciphertextMul);
         benchmark::DoNotOptimize(ciphertext3);
@@ -232,6 +233,7 @@ BENCHMARK(CKKSrns_Rescale)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
 void TCKKS_Rescale(benchmark::State& state) {
     uint32_t n = state.range(0);
     auto& setup = GetSetup<TCKKSRescaleSetup>(n);
+    state.counters["ring-dim"]  = std::log2(boot_configs[n].ringDim);
 
     while (state.KeepRunning()) {
         auto ciphertext3 = setup.cc->ModReduce(setup.ciphertextMul);
