@@ -219,6 +219,8 @@ static Setup& GetSetup(uint32_t configIndex) {
 void CKKSrns_Relin(benchmark::State& state) {
     uint32_t n = state.range(0);
     auto& setup = GetSetup<CKKSRelinSetup>(n);   // initialized once
+    state.counters["ring-dim"]  = std::log2(boot_configs[n].ringDim);
+
     while (state.KeepRunning()) {
         auto ciphertext3 = setup.cc->Relinearize(setup.ciphertextMul);
         benchmark::DoNotOptimize(ciphertext3);
@@ -230,6 +232,8 @@ BENCHMARK(CKKSrns_Relin)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
 void TCKKS_Relin(benchmark::State& state) {
     uint32_t n = state.range(0);
     auto& setup = GetSetup<TCKKSRelinSetup>(n);   // initialized once
+    state.counters["ring-dim"]  = std::log2(boot_configs[n].ringDim);
+
     while (state.KeepRunning()) {
         auto ciphertext3 = setup.cc->Relinearize(setup.ciphertextMul);
         benchmark::DoNotOptimize(ciphertext3);
