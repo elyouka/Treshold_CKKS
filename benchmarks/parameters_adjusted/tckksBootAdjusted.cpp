@@ -85,7 +85,9 @@ public:
 
 [[maybe_unused]] static void TCKKSCollectiveBoot(benchmark::State& state) {
 
-    auto t = boot_configs[state.range(0)];
+    uint32_t n = state.range(0);
+    auto t = boot_configs[n];
+    state.counters["ring-dim"]  = std::log2(boot_configs[n].ringDim);
 
     CCParams<CryptoContextCKKSRNS> parameters;
     // A. Specify main parameters
@@ -113,7 +115,6 @@ public:
     auto compressionLevel = CompressionLevel::SLACK;
     parameters.SetInteractiveBootCompressionLevel(compressionLevel);
 
-    state.counters["ring-dim"]  = std::log2(boot_configs[n].ringDim);
 
        /*  A4) Multiplicative depth.
     * The multiplicative depth determines the computational capability of the instantiated scheme. It should be set
