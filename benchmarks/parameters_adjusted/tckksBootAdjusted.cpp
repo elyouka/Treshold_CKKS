@@ -113,6 +113,7 @@ public:
     auto compressionLevel = CompressionLevel::SLACK;
     parameters.SetInteractiveBootCompressionLevel(compressionLevel);
 
+    state.counters["ring-dim"]  = std::log2(boot_configs[n].ringDim);
 
        /*  A4) Multiplicative depth.
     * The multiplicative depth determines the computational capability of the instantiated scheme. It should be set
