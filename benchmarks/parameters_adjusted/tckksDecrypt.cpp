@@ -197,7 +197,7 @@ struct TCKKSRescaleSetup {
     auto plaintext1 = cc->MakeCKKSPackedPlaintext(vectorOfInts1);
     auto plaintext2 = cc->MakeCKKSPackedPlaintext(vectorOfInts2);
 
-    auto ciphertext1 = cc->Encrypt(kp2.publicKey, plaintext1);
+    ciphertext1 = cc->Encrypt(kp2.publicKey, plaintext1);
 
     }
 };
