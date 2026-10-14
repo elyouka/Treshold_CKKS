@@ -75,5 +75,6 @@ add_openfhe_executable(tckksRelin benchmarks/parameters_adjusted/tckksRelinAdjus
 add_openfhe_executable(tckksBootAdjusted benchmarks/parameters_adjusted/tckksBootAdjusted.cpp)
 add_openfhe_executable(NTT benchmarks/parameters_adjusted/NTTadjusted.cpp)
 add_openfhe_executable(decrypt benchmarks/parameters_adjusted/tckksDecrypt.cpp)
+add_openfhe_executable(keygen benchmarks/parameters_adjusted/tckksKeyGen.cpp)
 
 
