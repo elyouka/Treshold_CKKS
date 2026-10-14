@@ -161,9 +161,6 @@ struct TCKKSRescaleSetup {
 
     TCKKSRescaleSetup(uint32_t n) {
     cc = GenerateTCKKSContext(n);
-        
-    KeyPair<DCRTPoly> kp1;
-    KeyPair<DCRTPoly> kp2;
 
     kp1 = cc->KeyGen();     
     auto evalMultKey = cc->KeySwitchGen(kp1.secretKey, kp1.secretKey);
