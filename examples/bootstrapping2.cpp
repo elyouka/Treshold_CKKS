@@ -53,7 +53,7 @@ struct boot_config {
     SecretKeyDist skdst;
     ScalingTechnique stech;
 };
-
+/*
 // clang-format off
 [[maybe_unused]] std::vector<boot_config> boot_configs = {
     // ringDm,   slots, dcrtBits, firstMod, numDigits, lvlsAfter, iters,   lvlb,                skdst,                stech
@@ -76,7 +76,15 @@ struct boot_config {
     { 1 << 16, 1 << 14,       50,       53,         7,         10,    1, {3, 3},       SPARSE_TERNARY,         FLEXIBLEAUTO},  // GPU1
     // TODO: enable following once STC Composite Scaling operational
     // { 1 << 17, 1 << 16,       78,       96,         0,        10,     2, {4, 4},       SPARSE_TERNARY, COMPOSITESCALINGAUTO},
+};*/
+
+[[maybe_unused]] std::vector<boot_config> boot_configs = {
+    // ringDm,   slots, dcrtBits, firstMod, numDigits, lvlsAfter, iters,   lvlb,                skdst,                stech
+    { 1 << 14, 1 << 13,       52,       57,        16,         9,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 15, 1 << 14,       52,       57,        16,         9,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
+    { 1 << 16, 1 << 15,       52,       57,        16,         9,     2, {3, 3},      UNIFORM_TERNARY,          FIXEDMANUAL},
 };
+
 // clang-format on
 
 [[maybe_unused]] static void BootConfigs(benchmark::internal::Benchmark* b) {
@@ -85,10 +93,10 @@ struct boot_config {
 }
 
 [[maybe_unused]] static void CKKSBoot(benchmark::State& state) {
-    auto t = boot_configs[3];
+    auto t = boot_configs[state.range(0)];
 
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetSecurityLevel(HEStd_128_classic);
+    //parameters.SetSecurityLevel(HEStd_128_classic);
     parameters.SetRingDim(t.ringDim);
     parameters.SetScalingModSize(t.dcrtBits);
     parameters.SetFirstModSize(t.firstMod);
@@ -125,6 +133,6 @@ struct boot_config {
     cc->ClearStaticMapsAndVectors();
 }
 
-BENCHMARK(CKKSBoot)->Unit(benchmark::kSecond);
+BENCHMARK(CKKSBoot)->Unit(benchmark::kSecond)->Apply(BootConfigs);
 
 BENCHMARK_MAIN();
