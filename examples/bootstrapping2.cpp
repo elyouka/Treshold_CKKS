@@ -96,7 +96,7 @@ struct boot_config {
     auto t = boot_configs[state.range(0)];
 
     CCParams<CryptoContextCKKSRNS> parameters;
-    //parameters.SetSecurityLevel(HEStd_128_classic);
+    parameters.SetSecurityLevel(HEStd_NotSet);
     parameters.SetRingDim(t.ringDim);
     parameters.SetScalingModSize(t.dcrtBits);
     parameters.SetFirstModSize(t.firstMod);
