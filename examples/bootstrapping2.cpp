@@ -93,7 +93,7 @@ struct boot_config {
 }
 
 [[maybe_unused]] static void CKKSBoot(benchmark::State& state) {
-    auto t = boot_configs[state.range(0)];
+    uint32_t t = boot_configs[state.range(0)];
 
     state.counters["ring-dim"]  = std::log2(boot_configs[t].ringDim);
 
