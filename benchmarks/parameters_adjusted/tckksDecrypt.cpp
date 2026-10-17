@@ -16,6 +16,25 @@
 
 using namespace lbcrypto;
 
+
+static void CheckDecryption(const Plaintext& got,
+                            const std::vector<std::complex<double>>& want,
+                            const char* tag)
+{
+    auto v = got->GetCKKSPackedValue();
+    if (v.size() < want.size())
+        throw std::runtime_error(std::string(tag) + ": plaintext shorter than expected");
+
+    double maxErr = 0.0;
+    for (size_t i = 0; i < want.size(); ++i)
+        maxErr = std::max(maxErr, std::abs(v[i] - want[i]));
+
+    if (maxErr > 1e-6) {
+        throw std::runtime_error(std::string(tag) +
+            ": max |err| = " + std::to_string(maxErr));
+    }
+}
+
 /*
         Setup
 */
@@ -101,8 +120,6 @@ struct CKKSRescaleSetup {
     CKKSRescaleSetup(uint32_t n) {
         cc = GenerateCKKSContext(n);
         keyPair = cc->KeyGen();
-        cc->EvalMultKeyGen(keyPair.secretKey);
-
         usint slots = cc->GetEncodingParams()->GetBatchSize();
         std::vector<std::complex<double>> vectorOfInts1(slots);
         for (usint i = 0; i < slots; i++) {
@@ -117,6 +134,12 @@ struct CKKSRescaleSetup {
         //auto ciphertext2 = cc->Encrypt(keyPair.publicKey, plaintext2);
 
         //ciphertextMul = cc->EvalMult(ciphertext1, ciphertext2);
+
+        //check if decryption works correctly
+        Plaintext check;
+        cc->Decrypt(keyPair.secretKey, ciphertext1, &check);
+        check->SetLength(slots);
+        CheckDecryption(check, vectorOfInts1, "CKKS single-party");
     }
 };
 
@@ -163,26 +186,7 @@ struct TCKKSRescaleSetup {
     cc = GenerateTCKKSContext(n);
 
     kp1 = cc->KeyGen();     
-    auto evalMultKey = cc->KeySwitchGen(kp1.secretKey, kp1.secretKey);
-    //cc->EvalSumKeyGen(kp1.secretKey);
-    //auto evalSumKeys =
-    //    std::make_shared<std::map<usint, EvalKey<DCRTPoly>>>(cc->GetEvalSumKeyMap(kp1.secretKey->GetKeyTag()));
-    // Round 2 (party B)
     kp2 = cc->MultipartyKeyGen(kp1.publicKey);
-
-    auto evalMultKey2 = cc->MultiKeySwitchGen(kp2.secretKey, kp2.secretKey, evalMultKey);
-    auto evalMultAB = cc->MultiAddEvalKeys(evalMultKey, evalMultKey2, kp2.publicKey->GetKeyTag());
-    auto evalMultBAB = cc->MultiMultEvalKey(kp2.secretKey, evalMultAB, kp2.publicKey->GetKeyTag());
-    // Compute SumKey
-    //auto evalSumKeysB = cc->MultiEvalSumKeyGen(kp2.secretKey, evalSumKeys, kp2.publicKey->GetKeyTag());
-    //std::cout << "Joint evaluation summation key for (s_a + s_b) is generated..." << std::endl;
-    //auto evalSumKeysJoin = cc->MultiAddEvalSumKeys(evalSumKeys, evalSumKeysB, kp2.publicKey->GetKeyTag());
-    //cc->InsertEvalSumKey(evalSumKeysJoin);
-    // Round 3 (party A)
-    auto evalMultAAB = cc->MultiMultEvalKey(kp1.secretKey, evalMultAB, kp2.publicKey->GetKeyTag());
-    auto evalMultFinal = cc->MultiAddEvalMultKeys(evalMultAAB, evalMultBAB, evalMultAB->GetKeyTag());
-
-    cc->InsertEvalMultKey({evalMultFinal});
 
     usint slots = cc->GetEncodingParams()->GetBatchSize();
     std::vector<std::complex<double>> vectorOfInts1(slots);
@@ -196,6 +200,21 @@ struct TCKKSRescaleSetup {
 
     ciphertext1 = cc->Encrypt(kp2.publicKey, plaintext1);
 
+
+    //check if decryption works correctly
+
+    auto partial1 = cc->MultipartyDecryptLead({ciphertext1}, kp1.secretKey);
+        auto partial2 = cc->MultipartyDecryptMain({ciphertext1}, kp2.secretKey);
+
+        std::vector<Ciphertext<DCRTPoly>> partials;
+        partials.push_back(partial1[0]);
+        partials.push_back(partial2[0]);
+
+        Plaintext check;
+        cc->MultipartyDecryptFusion(partials, &check);
+        check->SetLength(slots);
+
+        CheckDecryption(check, vectorOfInts1, "TCKKS multiparty");
     }
 };
 
@@ -212,25 +231,8 @@ static Setup& GetSetup(uint32_t configIndex) {
     return *slot;
 }
 
-/*
-usint slots = cc->GetEncodingParams()->GetBatchSize();
-    std::vector<std::complex<double>> vectorOfInts1(slots);
-    for (usint i = 0; i < slots; i++) {
-        vectorOfInts1[i] = 1.001 * i;
-    }
 
-    auto plaintext1  = cc->MakeCKKSPackedPlaintext(vectorOfInts1);
-    auto ciphertext1 = cc->Encrypt(keyPair.publicKey, plaintext1);
-    ciphertext1      = cc->LevelReduce(ciphertext1, nullptr, 1);
-
-    Plaintext plaintextDec1;
-
-    while (state.KeepRunning()) {
-        cc->Decrypt(keyPair.secretKey, ciphertext1, &plaintextDec1);
-    }
-        */
-
-void CKKSrns_Rescale(benchmark::State& state) {
+void CKKSrns_Decrypt(benchmark::State& state) {
     uint32_t n = state.range(0);
     auto& setup = GetSetup<CKKSRescaleSetup>(n);
     state.counters["ring-dim"]  = std::log2(boot_configs[n].ringDim);
@@ -242,9 +244,9 @@ void CKKSrns_Rescale(benchmark::State& state) {
         }
 }
 
-BENCHMARK(CKKSrns_Rescale)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
+BENCHMARK(CKKSrns_Decrypt)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
 
-void TCKKS_Rescale(benchmark::State& state) {
+void TCKKS_Decrypt(benchmark::State& state) {
     uint32_t n = state.range(0);
     auto& setup = GetSetup<TCKKSRescaleSetup>(n);
     state.counters["ring-dim"]  = std::log2(boot_configs[n].ringDim);
@@ -269,7 +271,7 @@ void TCKKS_Rescale(benchmark::State& state) {
 }
 
 
-BENCHMARK(TCKKS_Rescale)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
+BENCHMARK(TCKKS_Decrypt)->Unit(benchmark::kMillisecond)->Apply(BootConfigs);
 
 
 
