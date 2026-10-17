@@ -93,9 +93,9 @@ struct boot_config {
 }
 
 [[maybe_unused]] static void CKKSBoot(benchmark::State& state) {
-    uint32_t t = boot_configs[state.range(0)];
-
-    state.counters["ring-dim"]  = std::log2(boot_configs[t].ringDim);
+    auto t = boot_configs[state.range(0)];
+    
+    state.counters["ring-dim"]  = std::log2(t.ringDim);
 
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetSecurityLevel(HEStd_NotSet);
