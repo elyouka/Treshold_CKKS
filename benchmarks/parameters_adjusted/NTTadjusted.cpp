@@ -5,13 +5,16 @@ using namespace lbcrypto;
 
 [[maybe_unused]] static void RingArgs(benchmark::internal::Benchmark* b) {
     //for (uint32_t r : {1024, 4096, 8192, 16384, 32768, 65536, 131072, 262144})
-    for (uint32_t r : {16384, 32768, 65536})
+    //for (uint32_t r : {16384, 32768, 65536})
+    for (uint32_t r : {0, 1, 2})
         b->ArgName("Config")->Arg(r);
 }
 
 static void CiphertextNTT(benchmark::State& state) {
 
-    uint32_t n = state.range(0);
+    uint32_t i = state.range(0);
+    uint32_t ringDimension[] = {16384, 32768, 65536};
+    uint32_t n = ringDimension[i];
     uint32_t m = n >> 1;
     CCParams<CryptoContextCKKSRNS> params;
     params.SetMultiplicativeDepth(20);
