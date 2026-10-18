@@ -4,8 +4,9 @@
 using namespace lbcrypto;
 
 [[maybe_unused]] static void RingArgs(benchmark::internal::Benchmark* b) {
-    for (uint32_t r : {1024, 4096, 8192, 16384, 32768, 65536, 131072, 262144})
-        b->ArgName("ringdm")->Arg(r);
+    //for (uint32_t r : {1024, 4096, 8192, 16384, 32768, 65536, 131072, 262144})
+    for (uint32_t r : {16384, 32768, 65536})
+        b->ArgName("Config")->Arg(r);
 }
 
 static void CiphertextNTT(benchmark::State& state) {
@@ -36,8 +37,8 @@ static void CiphertextNTT(benchmark::State& state) {
     auto ct = cc->Encrypt(keys.publicKey, pt);
 
     // sanity check: number of towers per polynomial
-    state.counters["towers"] = ct->GetElements()[0].GetNumOfElements();
-    state.counters["ring dimension"] = std::log2(n);
+   // state.counters["towers"] = ct->GetElements()[0].GetNumOfElements(); //=22
+    state.counters["ring-dim"] = std::log2(n);
 
     for (auto _ : state) {
         for (auto& poly : ct->GetElements())
@@ -52,7 +53,8 @@ BENCHMARK(CiphertextNTT)->Unit(benchmark::kMillisecond)->Apply(RingArgs);
 BENCHMARK_MAIN();
 
 
-/*
+/* Here is the code of openfhe. Just verifying the benchmark performs the correct
+NTT operation
 
 inline void SetFormat(const Format format, uint32_t thread_limit = 0) {
         if (this->GetFormat() != format) {
