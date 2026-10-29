@@ -10,9 +10,20 @@ their runtime and hardware performance characteristics.
 
 Primitives currently benchmarked:
 - NTT (Number Theoretic Transform)
-- Rescale
-- Keyswitch (Relinearization)
-- Bootstrap (threshold)
+- Rescale (standard CKKS + threshold CKKS)
+- Relinearization (standard CKKS + threshold CKKS)
+- Bootstraping
+- threshold CKKS bootstrapping
+- decryption (standard CKKS + threshold CKKS)
+- key generation (standard CKKS + threshold CKKS)
+
+## Folder structure and location of important files
+
+-Benchmark implementations are located under benchmarks/parameters_adjusted, with 
+standard CKKS bootstrapping being an exeption (examples/bootstrapping2.cpp)
+-plots are located in the folder plots
+-plotting scripts in python are located in folder plotting scripts
+-results are located in the folder json files
 
 ## Prerequisites
 
@@ -40,12 +51,10 @@ make
 
 ## Known Issues
 
--The OpenFHE bootstrapping benchmark example might not run because of segment fault
-due to insufficient memory on WSL2
 
 ## Status
 
-Work in progress
+Completed
 
 ## License
 
